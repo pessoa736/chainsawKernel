@@ -1,0 +1,15 @@
+
+*.o
+*.bin
+*.img
+*.sys
+*.iso
+*.tar*
+*.zip
+
+iso/
+
+limine/
+kernel/lua/
+
+target/
