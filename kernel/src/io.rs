@@ -3,6 +3,8 @@ use core::arch::asm;
 
 
 static COM1: u16 = 0x3f8;
+const KEYBOARD_STATUS: u16 = 0x64;
+const KEYBOARD_DATA: u16 = 0x60;
 
 
 
@@ -50,6 +52,19 @@ pub fn init()
 pub fn ite() -> bool {
     unsafe {
         (inb(COM1 + 5) & 0x20) != 0
+    }
+}
+
+pub fn get_keyboard_input() -> u8 {
+    unsafe {
+        let status = inb(KEYBOARD_STATUS);
+
+        if (status & 0x01) != 0 
+        { 
+            return inb(KEYBOARD_DATA);
+        }
+        
+        0
     }
 }
 

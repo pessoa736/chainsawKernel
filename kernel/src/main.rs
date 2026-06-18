@@ -5,7 +5,7 @@ use limine::request::StackSizeRequest;
 use limine::BaseRevision;
 use core::panic::PanicInfo;
 
-use crate::video::pack_color;
+use crate::video::{pack_color, swap_buffers};
 
 mod memory;
 mod video;
@@ -13,6 +13,7 @@ mod db_font;
 mod io;
 mod math;
 mod terminal;
+mod tensors;
 
 
 #[used]
@@ -33,20 +34,13 @@ pub fn init_kernel()
 }
 
 
-#[no_mangle]
-pub extern "C" fn _start() -> ! 
-{
-    assert!(BASE_REVISION.is_supported());
-
-    init_kernel();
-
-    io::pss("hello world!\n\nwelcome to Motossera Kernel!\n\n");
-
+fn intro(){ 
     let wid = video::get_width();
     let hei = video::get_height();
     
     let mut t: f64 = 0.0;
-    loop {
+    unsafe 
+    {
         video::clear_screen(video::pack_color(240, 10, 10, 255));
         for y in 0 .. (hei/2) 
         {
@@ -61,7 +55,27 @@ pub extern "C" fn _start() -> !
         video::draw_string(wid/2, hei/2 + 8, "TEST 💖", 0x000);
 
         t+=0.05;
-        video::swap_buffers();
+    }
+}
+
+
+#[no_mangle]
+pub extern "C" fn _start() -> ! 
+{
+    assert!(BASE_REVISION.is_supported());
+
+    init_kernel();
+
+
+    terminal::write_str("hello world!\n\nwelcome to Motossera Kernel!\n\n");
+    
+   
+
+    loop {
+        let value = io::get_keyboard_input();
+        if value != 0 {terminal::write_char(value);}
+        terminal::render();
+        swap_buffers();    
     }
 }
 
