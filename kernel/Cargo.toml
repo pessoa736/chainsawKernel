@@ -6,6 +6,12 @@ edition = "2021"
 [dependencies]
 limine = "0.6.3"
 linked_list_allocator = "0.10"
+nalgebra = { version = "0.35.0", default-features = false, features = ["alloc"] }
+embedded-time = { version = "0.12", default-features = false }
+naive-timer = "0.2" # ou versão recente
+
+
+spin = "0.12.1"
 
 
 [build-dependencies]
