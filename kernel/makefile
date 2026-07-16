@@ -10,10 +10,10 @@ LIMINE_DIR = limine
 all: kernel.iso
 
 lua:
-	if [ ! -d lua ]; then \
+	if [ ! -d src/lua ]; then \
 		curl -L -R -O $(LUAURL); \
-		mkdir -p lua; \
-		tar zxf $(LUATAR) -C lua --strip-components=1; \
+		mkdir -p src/lua; \
+		tar zxf $(LUATAR) -C src/lua --strip-components=1; \
 	fi
 
 limine:
@@ -61,8 +61,11 @@ run: kernel.iso
 		-cpu host,+topoext \
 		-smp 1 \
 		-enable-kvm \
-		-m 8G \
-		-boot d
+		-m 1G \
+		-boot d \
+		-no-reboot \
+		-d int,cpu_reset \
+		-D qemu.log 
 
 clean:
 	rm -rf iso kernel.iso kernel.bin target/ *.o 

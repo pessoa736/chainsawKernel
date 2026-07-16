@@ -10,6 +10,6 @@
 iso/
 
 limine/
-kernel/lua/
+kernel/src/lua/
 
 target/
