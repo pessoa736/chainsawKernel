@@ -1,12 +1,22 @@
-use core::{cell::UnsafeCell, time::Duration };
+use core::cell::UnsafeCell;
 use limine::{framebuffer::{Framebuffer}, request::FramebufferRequest};
 use na::{Const, Matrix, SMatrix, SMatrixViewMut, ViewStorageMut};
-use naive_timer::Timer;
+// use naive_timer::Timer;
 use spin::{LazyLock, Mutex};
-use crate::{db_font, debuglog::dprint, timer::{SubTimer, TIMER, TimeInteration}};
+use crate::{db_font, debuglog::dprint, timer::{
+    // SubTimer, TIMER, 
+    TimeInteration
+}};
 use core::mem::MaybeUninit;
 
 
+pub const RED_COLOR: u32 = 0xF01010FF;
+pub const OFFWHITE_COLOR: u32 = 0xece8baFF;
+pub const OCEANDARK_COLOR: u32 = 0x003747FF;
+
+pub const BLACK_COLOR: u32 = 0x000000FF;
+pub const WHITE_COLOR: u32 = 0xFFF;
+pub const TRANSPARENT: u32 = 0x0;
 
 /// matriz de cor binaria:
 ///  
@@ -81,7 +91,7 @@ impl MaskColor
     }
 
 
-
+    
     pub fn pack(&mut self, rgb: [u8; 3]) -> u32 
     {
         let colors = self.get_rgb(); 
@@ -131,7 +141,7 @@ pub struct VirtualColor
 impl VirtualColor 
 {
     #[inline(always)]
-    pub fn new_hex(color : u32) -> Self
+    pub const fn new_hex(color : u32) -> Self
     {
         Self{
             r: ((color >> 24) & 0xFF) as u8,
@@ -143,7 +153,7 @@ impl VirtualColor
 
 
     #[inline(always)]
-    pub fn new(r: u8, g: u8, b: u8, a: u8) -> Self
+    pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Self
     {
         Self{
             r: r,
@@ -153,7 +163,7 @@ impl VirtualColor
         }
     }    
 
-    pub fn unpack(&self) -> u32 
+    pub const fn unpack(&self) -> u32 
     {
         ((self.a as u32) << 24) | 
         ((self.r as u32) << 16) | 
@@ -161,7 +171,7 @@ impl VirtualColor
         (self.b as u32)
     }
 
-    pub fn lerp(&self, color2: Self, t: f32) -> Self {
+    pub const fn lerp(&self, color2: Self, t: f32) -> Self {
         let t = t.clamp(0.0, 1.0);
         let um_menos_t = 1.0 - t;
 
@@ -171,6 +181,17 @@ impl VirtualColor
             b: ((self.b as f32 * um_menos_t) + (color2.b as f32 * t)) as u8,
             a: ((self.a as f32 * um_menos_t) + (color2.a as f32 * t)) as u8,
         }
+    }
+}
+
+impl PartialEq for VirtualColor {
+    fn eq(&self, other: &Self) -> bool {
+        if 
+            self.a == other.a &&
+            self.r == other.r &&
+            self.g == other.g &&
+            self.b == other.b 
+        {true} else {false}
     }
 }
 
@@ -265,7 +286,7 @@ impl Vga {
                         dprint(Some("[V.5]"), "organizou as maskaras de cores");
 
                         // Limpa o backbuffer estático com preto no boot
-                        //self.framebuffer.lock().clear(0x0);
+                        self.clear(TRANSPARENT);
 
                         initialized = true;
                         dprint(Some("[V.8]"), "iniciou");
@@ -409,6 +430,3 @@ impl Vga {
 
 
 
-
-pub const RED_COLOR: u32 = 0xFFF01010;
-pub const OFFWHITE_COLOR: u32 = 0xFFece8ba;
