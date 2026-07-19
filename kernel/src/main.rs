@@ -1,18 +1,18 @@
 #![no_std]
 #![no_main]
 #![feature(generic_const_exprs)]
-#![feature(inherent_associated_types)]
+// #![feature(inherent_associated_types)]
 #![allow(incomplete_features)]
-#![feature(abi_x86_interrupt)]
+// #![feature(abi_x86_interrupt)]
 
 use core::time::Duration;
 
-use embedded_time::duration::Seconds;
 use limine::request::{FramebufferRequest, StackSizeRequest};
 use limine::BaseRevision;
-use spin::lazylock;
+use spin::{Mutex};
 
-use crate::timer::{SubTimer, TimeInteration};
+use crate::terminal::Terminal;
+use crate::timer::{TimeInteration};
 use crate::{debuglog::dprint, timer::TIMER, video::{Vga, VirtualColor}};
 
 extern crate alloc;
@@ -27,11 +27,14 @@ mod video;
 mod db_font;
 mod io;
 mod math;
-//mod terminal;
+mod terminal;
 //mod matriz;
 mod timer;
 //mod shell;
 mod stubs;
+
+
+const SKIPINTRO: bool = true;
 
 #[no_mangle]
 #[used]
@@ -53,6 +56,7 @@ static FRAMEBUFFER_REQUEST: FramebufferRequest = FramebufferRequest::new();
 struct Kernel {
     timer: TIMER,
     vga: Vga,
+    terminal: Terminal
 }
 
 
@@ -76,6 +80,8 @@ impl Kernel {
         self.vga.init(&FRAMEBUFFER_REQUEST);
         dprint(Some("IK.3"), "video inicializou");
 
+        self.terminal.init(&self.vga);
+        dprint(Some("IK.4"), "terninal inicializou");
         // dprint(Some("BOOT"), "C");
     
         // paint_welcome();
@@ -87,14 +93,24 @@ impl Kernel {
 
     pub fn Loop(&mut self)
     {
-        dprint(Some("loop"), "inicializou o loop");
-        loop {}
+        // let mut Looptime = TimeInteration::new(None);
+        // dprint(Some("loop"), "inicializou o loop");
+        
+        // Looptime.loop_(
+        //     |_t| {
+
+        //     }
+        // );
+        loop {
+            self.terminal.render(&mut self.vga);
+            self.vga.swap_buffers();
+        }
     }
 
 
     pub fn paint_welcome(&mut self)
     {
-        let mut wel_time = TimeInteration::new(Some(Duration::from_secs(2).as_millis() as u64));
+        let mut wel_time = TimeInteration::new(Some(Duration::from_secs(1).as_millis() as u64));
 
 
         dprint(Some("welcome"), "inicializou o welcome");
@@ -159,10 +175,13 @@ unsafe impl Sync for Kernel {}
 /// entrar no shell, para garantir que algo renderiza (sem depender de
 /// loop de intro que nunca disparava o swap_buffers).
 
-static mut KERNEL: Kernel = Kernel {
-    timer: TIMER,
-    vga: Vga::new()
-};
+static mut KERNEL: Mutex<Kernel> = Mutex::new(
+    Kernel {
+        timer: TIMER,
+        vga: Vga::new(),
+        terminal: Terminal::new()
+    }
+);
 
 
 #[no_mangle]
@@ -173,10 +192,13 @@ pub extern "C" fn _start() -> ()
 
     
     unsafe {
-        KERNEL.init();
-        KERNEL.paint_welcome();
-        KERNEL.Loop();
+        let kernel = KERNEL.get_mut();
+        kernel.init();
+        if !SKIPINTRO {kernel.paint_welcome();};
+        kernel.Loop();
     }
+
+    loop {}
 }
 
 #[inline(never)]
